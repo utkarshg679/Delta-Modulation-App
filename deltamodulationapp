@@ -1,0 +1,160 @@
+classdef deltamodulationapp < matlab.apps.AppBase
+
+    % Properties that correspond to app components
+    properties (Access = public)
+        UIFigure                     matlab.ui.Figure
+        ShowBinaryCodeButton         matlab.ui.control.Button
+        waveequationasafunctionoftEditField  matlab.ui.control.EditField
+        waveequationasafunctionoftEditFieldLabel  matlab.ui.control.Label
+        PlotBothwaveandStairsButton  matlab.ui.control.Button
+        PlotstairsButton             matlab.ui.control.Button
+        StepSizeSlider               matlab.ui.control.Slider
+        StepSizeSliderLabel          matlab.ui.control.Label
+        PlotwaveButton               matlab.ui.control.Button
+        UIAxes                       matlab.ui.control.UIAxes
+    end
+
+    
+    properties (Access = private)
+        Amplitude% Description
+        Time
+        SliderValue % Description
+        % Description
+        fn % Description
+        output % Description
+    end
+    
+
+    % Callbacks that handle component events
+    methods (Access = private)
+
+        % Button pushed function: PlotwaveButton
+        function PlotwaveButtonPushed(app, event)
+            t=0:2*pi/100:2*pi;
+            
+            app.Time=t;
+            app.Amplitude= eval(app.fn);
+            plot(app.UIAxes,t,app.Amplitude)
+            
+        end
+
+        % Value changing function: StepSizeSlider
+        function StepSizeSliderValueChanging(app, event)
+            app.SliderValue  = event.Value;
+            
+        end
+
+        % Button pushed function: PlotstairsButton
+        function PlotstairsButtonPushed(app, event)
+            
+          y = [0]; %output DM signal ie. stream of 1 or 0
+xr = zeros(1, length(app.Amplitude)); %output of integrator ie. staircase approximation ;initial value =0
+xr(1) = app.Amplitude(1);
+d= zeros(1, length(app.Amplitude));
+for i=1:length(app.Amplitude)
+    if xr(i) <= app.Amplitude(i)
+        if i < length(app.Amplitude)
+            d(i) = 1;
+            xr(i+1) = xr(i) + app.SliderValue;
+        end
+    else
+        if i < length(app.Amplitude)
+            d(i) = 0;
+            xr(i+1) = xr(i) - app.SliderValue;
+        end
+    end
+    y = [y d];
+    app.output=num2str(y);
+end
+
+stairs(app.UIAxes, app.Time, xr);
+
+        
+        end
+
+        % Button pushed function: PlotBothwaveandStairsButton
+        function PlotBothwaveandStairsButtonPushed(app, event)
+            plot(app.UIAxes,app.Time,app.Amplitude)
+            hold(app.UIAxes, 'on');
+            y = [0]; %output DM signal ie. stream of 1 or 0
+xr = zeros(1,length(app.Amplitude)); %output of integrator ie. staircase approximation ;initial value =0
+d = zeros(1,length(app.Amplitude));
+            xr(1) = app.Amplitude(1);
+for i=1:length(app.Amplitude)
+    if xr(i) <= app.Amplitude(i)
+        if i < length(app.Amplitude)
+            d = 1;
+            xr(i+1) = xr(i) + app.SliderValue;
+        end
+    else
+        if i < length(app.Amplitude)
+            d = 0;
+            xr(i+1) = xr(i) - app.SliderValue;
+        end
+    end
+    y = [y d];
+    app.output=num2str(y);
+end
+
+stairs(app.UIAxes, app.Time,xr);
+           hold(app.UIAxes, 'off');
+
+        end
+
+        % Value changing function: waveequationasafunctionoftEditField
+        function waveequationasafunctionoftEditFieldValueChanging(app, event)
+
+app.PlotstairsButton.Text = 'Plot stairs';
+
+            % Create PlotBothwaveandStairsButton
+            app.PlotBothwaveandStairsButton = uibutton(app.UIFigure, 'push');
+            app.PlotBothwaveandStairsButton.ButtonPushedFcn = createCallbackFcn(app, @PlotBothwaveandStairsButtonPushed, true);
+            app.PlotBothwaveandStairsButton.Position = [603 129 178 37];
+            app.PlotBothwaveandStairsButton.Text = 'Plot Both wave and Stairs';
+
+            % Create waveequationasafunctionoftEditFieldLabel
+            app.waveequationasafunctionoftEditFieldLabel = uilabel(app.UIFigure);
+            app.waveequationasafunctionoftEditFieldLabel.HorizontalAlignment = 'right';
+            app.waveequationasafunctionoftEditFieldLabel.Position = [60 203 108 30];
+            app.waveequationasafunctionoftEditFieldLabel.Text = {'wave equation as a'; 'function of t'};
+
+            % Create waveequationasafunctionoftEditField
+            app.waveequationasafunctionoftEditField = uieditfield(app.UIFigure, 'text');
+            app.waveequationasafunctionoftEditField.ValueChangingFcn = createCallbackFcn(app, @waveequationasafunctionoftEditFieldValueChanging, true);
+            app.waveequationasafunctionoftEditField.Position = [183 211 336 22];
+
+            % Create ShowBinaryCodeButton
+            app.ShowBinaryCodeButton = uibutton(app.UIFigure, 'push');
+            app.ShowBinaryCodeButton.ButtonPushedFcn = createCallbackFcn(app, @ShowBinaryCodeButtonPushed, true);
+            app.ShowBinaryCodeButton.Position = [550 200 175 37];
+            app.ShowBinaryCodeButton.Text = 'Show Binary Code';
+
+            % Show the figure after all components are created
+            app.UIFigure.Visible = 'on';
+        end
+    end
+
+    % App creation and deletion
+    methods (Access = public)
+
+        % Construct app
+        function app = deltamodulationapp
+
+            % Create UIFigure and components
+            createComponents(app)
+
+            % Register the app with App Designer
+            registerApp(app, app.UIFigure)
+
+if nargout == 0
+                clear app
+            end
+        end
+
+        % Code that executes before app deletion
+        function delete(app)
+
+            % Delete UIFigure when app is deleted
+            delete(app.UIFigure)
+        end
+    end
